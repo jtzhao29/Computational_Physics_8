@@ -6,8 +6,8 @@ L = 4
 T = 1.0
 beta = 1 / T
 J = 1
-n_steps = 600000
-burn_in = 5000
+n_steps = 550000
+burn_in = 450000
 
 def initial_config(L):
     return np.random.choice([-1, 1], size=(L, L))
