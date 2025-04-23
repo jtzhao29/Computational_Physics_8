@@ -6,7 +6,7 @@ L = 4
 T = 1.0
 beta = 1 / T
 J = 1
-n_steps = 60000
+n_steps = 600000
 burn_in = 5000
 
 def initial_config(L):
@@ -45,10 +45,10 @@ def run_simulation():
     return np.array(energies)
 
 if __name__ == "__main__":
-    os.makedirs("../images", exist_ok=True)
+    os.makedirs("./images", exist_ok=True)
     energies = run_simulation()
     avg_energy = np.mean(energies)
-    print(f"Average Energy (L=4, T=1): {avg_energy:.2f}")
+    print(f"Average Energy (L=4, T=1): {avg_energy:.4f}")
 
     plt.plot(energies)
     plt.xlabel("MC steps")

@@ -1,66 +1,81 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import initial_lattice, compute_energy, compute_magnetization, metropolis_step
+from utils import initialize_lattice, calculate_energy, calculate_magnetization, metropolis_step
 
-def run_simulation(L, T, n_eq_steps=5000, n_meas_steps=10000):
+
+def run_simulation(L, T, n_eq=10000, n_meas=100000):
+    """
+    对 L x L 格子在温度 T 下进行 MCMC 模拟，返回能量和磁化强度统计
+    """
     beta = 1.0 / T
-    lattice = initial_lattice(L)
-
-    # 平衡过程
-    for _ in range(n_eq_steps):
+    lattice = initialize_lattice(L)
+    # 平衡热化
+    for _ in range(n_eq):
         lattice = metropolis_step(lattice, beta)
-
-    E_total, E2_total = 0, 0
-    M_total, M2_total, Mabs_total = 0, 0, 0
-    for _ in range(n_meas_steps):
+    # 测量
+    E_list, M_list = [], []
+    for _ in range(n_meas):
         lattice = metropolis_step(lattice, beta)
-        E = compute_energy(lattice)
-        M = compute_magnetization(lattice)
-        E_total += E
-        E2_total += E**2
-        M_total += M
-        M2_total += M**2
-        Mabs_total += abs(M)
-
-    N = L * L
-    avg_E = E_total / n_meas_steps
-    avg_E2 = E2_total / n_meas_steps
-    avg_M2 = M2_total / n_meas_steps
-    avg_Mabs = Mabs_total / n_meas_steps
-
-    c = beta**2 * (avg_E2 - avg_E**2) / N
-    chi = beta * (avg_M2 - avg_Mabs**2) / N
-    m2 = avg_M2 / (N**2)
-
-    return avg_E / N, c, chi, m2
+        E_list.append(calculate_energy(lattice))
+        M_list.append(calculate_magnetization(lattice))
+    return np.array(E_list), np.array(M_list)
 
 def plot_observables(T_list, L_list):
+    os.makedirs("images", exist_ok=True)
+    # Plot 1: Magnetization squared
+    plt.figure(figsize=(6,4))
     for L in L_list:
-        E_list, c_list, chi_list, m2_list = [], [], [], []
+        m2_all = []
         for T in T_list:
-            E, c, chi, m2 = run_simulation(L, T)
-            E_list.append(E)
-            c_list.append(c)
-            chi_list.append(chi)
-            m2_list.append(m2)
+            E, M = run_simulation(L, T)
+            N = L * L
+            m2_all.append(np.mean(M**2) / N**2)
+        plt.plot(T_list, m2_all, label=f"L={L}")
+    plt.xlabel("Temperature T")
+    plt.ylabel(r"$\langle m^2 \rangle$")
+    plt.title(r"Magnetization squared $\langle m^2 \rangle$")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("./images/magnetization_squared.png")
+    plt.close()
 
-        plt.figure(1)
-        plt.plot(T_list, m2_list, label=f"L={L}")
-        plt.figure(2)
-        plt.plot(T_list, c_list, label=f"L={L}")
-        plt.figure(3)
-        plt.plot(T_list, chi_list, label=f"L={L}")
+    # Plot 2: Specific heat
+    plt.figure(figsize=(6,4))
+    for L in L_list:
+        c_all = []
+        for T in T_list:
+            E, M = run_simulation(L, T)
+            N = L * L
+            beta = 1.0 / T
+            c_all.append(beta**2 * (np.mean(E**2) - np.mean(E)**2) / N)
+        plt.plot(T_list, c_all, label=f"L={L}")
+    plt.xlabel("Temperature T")
+    plt.ylabel("Specific heat c")
+    plt.title("Specific heat as a function of temperature")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("./images/specific_heat.png")
+    plt.close()
 
-    for i, name in enumerate(["m2", "c", "chi"], start=1):
-        plt.figure(i)
-        plt.xlabel("Temperature T")
-        plt.ylabel(name)
-        plt.title(f"{name} vs T")
-        plt.legend()
-        plt.grid(True)
-        plt.savefig(f"images/{name}.png")
-        plt.close()
-
+    # Plot 3: Susceptibility
+    plt.figure(figsize=(6,4))
+    for L in L_list:
+        chi_all = []
+        for T in T_list:
+            E, M = run_simulation(L, T)
+            N = L * L
+            beta = 1.0 / T
+            chi_all.append(beta * (np.mean(M**2) - np.mean(np.abs(M))**2) / N)
+        plt.plot(T_list, chi_all, label=f"L={L}")
+    plt.xlabel("Temperature T")
+    plt.ylabel(r"Susceptibility $\chi$")
+    plt.title("Susceptibility as a function of temperature")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("./images/susceptibility.png")
+    plt.close()
+    
 if __name__ == '__main__':
     T_list = np.arange(1.5, 3.1, 0.1)
     L_list = [8, 16, 32]
