@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 L = 16
-T = 0.5 * np.log(1 + np.sqrt(2))  # 临界温度
-n_steps = 1000
+T = 1/(0.5 * np.log(1 + np.sqrt(2)) ) # 临界温度
+n_steps = 2000000
 J = 1
 
 def init_lattice(L):
@@ -35,7 +35,7 @@ lattice = init_lattice(L)
 for t in range(n_steps):
     lattice = metropolis_step(lattice, T)
     E = calc_energy(lattice)
-    energies.append(E / (L * L))
+    energies.append(E/L**2)  # 归一化能量
 
 plt.figure(figsize=(6,4))
 plt.plot(energies)
