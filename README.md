@@ -351,7 +351,6 @@ $$\beta_c = \frac{1}{2}\ln(1 + \sqrt{2})$$
 为了进一步探究经过多久可以弛豫到稳定状态，我们可以计算能量的标准差 $\sigma_E$，并观察其随时间的变化。
 ![alt text](images/energy_relaxation_logscale.png)
 
-
 2. 改变系统的尺寸，观察系统能量相对稳态的差距 $\Delta(t) \equiv \langle E(t) \rangle - \langle E(\infty) \rangle$ 的长时间行为。你发现了什么规律？系统尺寸对这个规律有怎样的影响？临界温度在这个问题中可能有什么意义（3分） hint: 谨慎地确定 $\langle E(\infty) \rangle$.
 
 

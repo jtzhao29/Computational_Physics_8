@@ -6,10 +6,10 @@ from numba import njit
 
 # 参数设置
 L = 16
-T = 0.5 * np.log(1 + np.sqrt(2))  # 临界温度
+T = 1/(0.5 * np.log(1 + np.sqrt(2)) ) # 临界温度
 J = 1
 n_steps = 2000
-n_runs = 200
+n_runs = 1000
 
 @njit
 def init_lattice(L):
@@ -60,8 +60,8 @@ def run_multiple_simulations():
     mean_energies = np.mean(all_energies, axis=0)
     return mean_energies
 
-def power_law(t, a, b):
-    return a * t**b
+def power_law(t, a, b,c):
+    return a * t**b+c
 
 def exp_decay(t, a, tau):
     return a * np.exp(-t / tau)
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     energies = run_multiple_simulations()
     energies_smooth = uniform_filter1d(energies, size=1000)
 
-    E_inf = np.mean(energies[-5000:])
+    E_inf = np.mean(energies[-1000:])
     Delta = energies - E_inf
 
     plt.figure(figsize=(7,5))
@@ -85,11 +85,14 @@ if __name__ == "__main__":
     plt.savefig("./images/energy_relaxation_smooth.png")
     plt.show()
 
+    Delta_inf = np.mean(abs(Delta[-1000:]))
     t_arr = np.arange(len(Delta))
     plt.figure(figsize=(7,5))
     plt.semilogy(t_arr, np.abs(Delta), label=r"$|\Delta(t)|$")
+    plt.axhline((Delta_inf), color='r', linestyle='--', label=f"$\\hat{{|\\Delta(t)| }}= {((Delta_inf)):.10f}$")
     plt.xlabel("Monte Carlo Time Step")
     plt.ylabel(r"$|\Delta(t)|$")
+    # plt.rc('text', usetex=True)  # Enable LaTeX rendering for labels
     plt.title("Relaxation Difference (log scale)")
     plt.grid()
     plt.legend()
@@ -97,22 +100,22 @@ if __name__ == "__main__":
     plt.savefig("./images/energy_relaxation_logscale.png")
     plt.show()
 
-    mask = (t_arr <1000)
-    try:
-        popt, pcov = curve_fit(power_law, t_arr[mask], np.abs(Delta[mask]), p0=(1.0, -0.5))
-        a_fit, b_fit = popt
-        print(f"Power-law fit: \u0394(t) ~ t^{b_fit:.3f}")
+    # mask = (t_arr < 200)
+    # try:
+    #     popt, pcov = curve_fit(power_law, t_arr[mask], np.abs(Delta[mask]), p0=(1.0, -0.5))
+    #     a_fit, b_fit,c_fit = popt
+    #     print(f"Power-law fit: \u0394(t) ~ t^{b_fit:.3f}")
 
-        plt.figure(figsize=(7,5))
-        plt.semilogy(t_arr, np.abs(Delta), label="Data")
-        plt.semilogy(t_arr, power_law(t_arr, *popt), '--', label=fr"Fit: $\Delta(t) \propto t^{{{b_fit:.2f}}}$")
-        plt.xlabel("Monte Carlo Time Step")
-        plt.ylabel(r"$|\Delta(t)|$")
-        plt.title("Relaxation Fit (Power Law)")
-        plt.legend()
-        plt.grid()
-        plt.tight_layout()
-        plt.savefig("./images/energy_relaxation_fit.png")
-        plt.show()
-    except Exception as e:
-        print(f"Fitting failed: {e}")
+    #     plt.figure(figsize=(7,5))
+    #     plt.semilogy(t_arr, np.abs(Delta), label="Data")
+    #     plt.semilogy(t_arr, power_law(t_arr, *popt), '--', label=fr"Fit: $\Delta(t) \propto t^{{{b_fit:.2f}}}$")
+    #     plt.xlabel("Monte Carlo Time Step")
+    #     plt.ylabel(r"$|\Delta(t)|$")
+    #     plt.title("Relaxation Fit (Power Law)")
+    #     plt.legend()
+    #     plt.grid()
+    #     plt.tight_layout()
+    #     plt.savefig("./images/energy_relaxation_fit.png")
+    #     plt.show()
+    # except Exception as e:
+    #     print(f"Fitting failed: {e}")
