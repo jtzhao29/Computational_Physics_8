@@ -101,7 +101,9 @@ $$
 #### 数值结果
 
 通过严格计算得：
-![alt text](image-1.png)
+![alt text](images/image-1.png)
+
+
 
 - 配分函数：\(Z \approx 1.58809\times 10^{14}\)
 - 平均能量：\(\langle E \rangle \approx -31.95454\)
@@ -270,7 +272,7 @@ $$
 
 ####  模拟结果
 运行结果：
-![alt text](image-3.png)
+![alt text](images/image-3.png)
 模拟过程中记录每一步的能量，最后取平均值得到：
 
  <!-- wrong -->
