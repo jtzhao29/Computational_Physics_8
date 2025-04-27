@@ -73,6 +73,46 @@ $$
 - 平均能量：$\langle E \rangle \approx -31.9569$
 - 系统熵：$S \approx 0.048$
 - 自由能：$F \approx -32.0049$
+---
+### 问题一
+
+以上方法利用了平均场理论，不够精确，还可以用更加精确的方法：
+
+
+#### 配分函数计算
+
+系统的配分函数 \(Z\) 为所有可能的自旋构型的配分和：
+$$
+Z = \sum_{\{ \sigma \}} e^{-\beta E(\{ \sigma \})}
+$$
+其中 \(\beta = \frac{1}{k_B T}\)，取 \(k_B = 1\)，\(T = 1\)，因此 \(\beta = 1\)。
+
+通过穷举所有 \(2^{16}\) 种自旋状态，可以准确计算出 \(Z\) 及能量期望 \(\langle E \rangle\)：
+
+- 平均能量：
+$$
+\langle E \rangle = \frac{1}{Z} \sum_{\{ \sigma \}} E(\{ \sigma \}) e^{-\beta E(\{ \sigma \})}
+$$
+- 自由能：
+$$
+F = -k_B T \ln Z
+$$
+
+#### 数值结果
+
+通过严格计算得：
+![alt text](image-1.png)
+
+- 配分函数：\(Z \approx 1.58809\times 10^{14}\)
+- 平均能量：\(\langle E \rangle \approx -31.95454\)
+- 自由能：\(F \approx -32.69872\)
+
+#### 结果总结
+
+- 平均能量：\(\langle E \rangle \approx -31.95454\)
+- 自由能：\(F \approx -32.69872\)
+
+
 
 
 <!-- 
@@ -230,18 +270,17 @@ $$
 
 ####  模拟结果
 运行结果：
-![alt text](image.png)
-
+![alt text](image-3.png)
 模拟过程中记录每一步的能量，最后取平均值得到：
 
  <!-- wrong -->
 $$
-\langle E \rangle \approx -31.956
+\langle E \rangle \approx -31.9547 \pm 0.0027
 $$
 
 与第一问中精确解：
 $$
-E_{\text{exact}} = -31.956
+E_{\text{exact}} = -31.9545
 $$
 高度吻合，证明 Metropolis 算法正确实现，且采样充分。
 <!-- 
@@ -318,7 +357,7 @@ $$
 
 ####  结论与分析
 
-1. 三个物理量都在临界点 $T_c \approx 2.27$ 附近发生剧烈变化，标志着二维 Ising 模型的热相变。
+<!-- todo -->
 2. 随着系统尺寸 $L$ 增大，峰值变得更尖锐，且靠近理论临界点，说明有限尺寸标度行为显现。
 3. 模拟结果验证了 Metropolis 算法的有效性及其对临界现象的刻画能力。
 
@@ -351,9 +390,15 @@ $$\beta_c = \frac{1}{2}\ln(1 + \sqrt{2})$$
 为了进一步探究经过多久可以弛豫到稳定状态，我们可以计算能量的标准差 $\sigma_E$，并观察其随时间的变化。
 ![alt text](images/energy_relaxation_logscale.png)
 
+进行指数拟合：
+间的变化。
+![alt text](images/energy_relaxation_expfit.png)
+
 2. 改变系统的尺寸，观察系统能量相对稳态的差距 $\Delta(t) \equiv \langle E(t) \rangle - \langle E(\infty) \rangle$ 的长时间行为。你发现了什么规律？系统尺寸对这个规律有怎样的影响？临界温度在这个问题中可能有什么意义（3分） hint: 谨慎地确定 $\langle E(\infty) \rangle$.
 
+![alt text](<images/energy_relaxation_smooth_when_L=[8, 16, 32, 64].png>)
 
+![alt text](<images/energy_relaxation_logscale_when_L=[8, 16, 32, 64].png>)
 ## 附录
 ## A.L=4 能量
 ``` python
