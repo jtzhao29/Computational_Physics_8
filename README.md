@@ -336,14 +336,276 @@ $$\beta_c = \frac{1}{2}\ln(1 + \sqrt{2})$$
 
 进行演化。计算系统的平均能量 $\langle E(t) \rangle$。其中 $t$ 是蒙卡时间步。
 
-1. 对 $L = 16$ 的系统，画出能量随着时间的变化关系。粗略探究需要多长时间，系统能量弛豫到稳态 $\langle E(\infty) \rangle$。（2分）
+<!-- 1. 对 $L = 16$ 的系统，画出能量随着时间的变化关系。粗略探究需要多长时间，系统能量弛豫到稳态 $\langle E(\infty) \rangle$。（2分） -->
 
 
 ### 问题1：$L=16$ 时的能量演化过程
 
 我们模拟系统在临界温度下从无序初态演化，记录能量的时间序列，并观察能否弛豫到稳定状态。
 
-![alt text](images/energy_vs_time_L16.png)
+采集1000个系综平均，并计算能量随时间的变化关系。
+
+
+![alt text](images/energy_relaxation_smooth.png)
+
+为了进一步探究经过多久可以弛豫到稳定状态，我们可以计算能量的标准差 $\sigma_E$，并观察其随时间的变化。
+![alt text](images/energy_relaxation_logscale.png)
 
 
 2. 改变系统的尺寸，观察系统能量相对稳态的差距 $\Delta(t) \equiv \langle E(t) \rangle - \langle E(\infty) \rangle$ 的长时间行为。你发现了什么规律？系统尺寸对这个规律有怎样的影响？临界温度在这个问题中可能有什么意义（3分） hint: 谨慎地确定 $\langle E(\infty) \rangle$.
+
+
+## 附录
+## A.L=4 能量
+``` python
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+L = 4
+T = 1.0
+beta = 1 / T
+J = 1
+n_steps = 550000
+burn_in = 450000
+
+def initial_config(L):
+    return np.random.choice([-1, 1], size=(L, L))
+
+def calc_energy(config):
+    energy = 0
+    for i in range(L):
+        for j in range(L):
+            S = config[i, j]
+            neighbors = config[(i+1)%L, j] + config[i, (j+1)%L] + config[(i-1)%L, j] + config[i, (j-1)%L]
+            energy -= J * S * neighbors / 2
+    return energy
+
+def metropolis_step(config, beta):
+    for _ in range(L*L):
+        i = np.random.randint(0, L)
+        j = np.random.randint(0, L)
+        S = config[i, j]
+        neighbors = config[(i+1)%L, j] + config[i, (j+1)%L] + config[(i-1)%L, j] + config[i, (j-1)%L]
+        dE = 2 * J * S * neighbors
+        if dE <= 0 or np.random.rand() < np.exp(-beta * dE):
+            config[i, j] *= -1
+    return config
+
+def run_simulation():
+    config = initial_config(L)
+    energies = []
+
+    for step in range(n_steps):
+        config = metropolis_step(config, beta)
+        if step >= burn_in:
+            E = calc_energy(config)
+            energies.append(E)
+
+    return np.array(energies)
+
+if __name__ == "__main__":
+    os.makedirs("./images", exist_ok=True)
+    energies = run_simulation()
+    avg_energy = np.mean(energies)
+    print(f"Average Energy (L=4, T=1): {avg_energy:.4f}")
+
+    plt.plot(energies)
+    plt.xlabel("MC steps")
+    plt.ylabel("Energy")
+    plt.title("L=4, T=1 Ising energy change over time")
+    plt.grid(True)
+    plt.savefig("./images/energy_L4_T1.png")
+    plt.show()
+```
+
+### 第四问 utils.py
+``` python
+import numpy as np
+
+def initialize_lattice(L):
+    """
+    初始化 L x L 的 Ising 模型格子，自旋取值 +1 或 -1
+    """
+    return 2 * np.random.randint(2, size=(L, L)) - 1
+
+
+def calculate_energy(lattice, J=1):
+    """
+    计算当前格子的总能量，周期性边界条件
+    """
+    L = lattice.shape[0]
+    energy = 0
+    for i in range(L):
+        for j in range(L):
+            S = lattice[i, j]
+            neighbors = (
+                lattice[(i + 1) % L, j] + lattice[i, (j + 1) % L]
+                + lattice[(i - 1) % L, j] + lattice[i, (j - 1) % L]
+            )
+            energy -= J * S * neighbors
+    return energy / 2  # 每对交互计算两次，故除以 2
+
+
+def calculate_magnetization(lattice):
+    """
+    计算当前格子的总磁化强度
+    """
+    return np.sum(lattice)
+
+
+def metropolis_step(lattice, beta, J=1):
+    """
+    在格子上执行一次 Metropolis 更新
+    """
+    L = lattice.shape[0]
+    i, j = np.random.randint(L), np.random.randint(L)
+    S = lattice[i, j]
+    neighbors = (
+        lattice[(i + 1) % L, j] + lattice[i, (j + 1) % L]
+        + lattice[(i - 1) % L, j] + lattice[i, (j - 1) % L]
+    )
+    dE = 2 * J * S * neighbors
+    if dE <= 0 or np.random.rand() < np.exp(-beta * dE):
+        lattice[i, j] = -S
+    return lattice
+
+```
+
+### 第四问 ising.py
+``` python
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from utils import initialize_lattice, calculate_energy, calculate_magnetization, metropolis_step
+
+
+def run_simulation(L, T, n_eq=10000, n_meas=100000):
+    """
+    对 L x L 格子在温度 T 下进行 MCMC 模拟，返回能量和磁化强度统计
+    """
+    beta = 1.0 / T
+    lattice = initialize_lattice(L)
+    # 平衡热化
+    for _ in range(n_eq):
+        lattice = metropolis_step(lattice, beta)
+    # 测量
+    E_list, M_list = [], []
+    for _ in range(n_meas):
+        lattice = metropolis_step(lattice, beta)
+        E_list.append(calculate_energy(lattice))
+        M_list.append(calculate_magnetization(lattice))
+    return np.array(E_list), np.array(M_list)
+
+def plot_observables(T_list, L_list):
+    os.makedirs("images", exist_ok=True)
+    # Plot 1: Magnetization squared
+    plt.figure(figsize=(6,4))
+    for L in L_list:
+        m2_all = []
+        for T in T_list:
+            E, M = run_simulation(L, T)
+            N = L * L
+            m2_all.append(np.mean(M**2) / N**2)
+        plt.plot(T_list, m2_all, label=f"L={L}")
+    plt.xlabel("Temperature T")
+    plt.ylabel(r"$\langle m^2 \rangle$")
+    plt.title(r"Magnetization squared $\langle m^2 \rangle$")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("./images/magnetization_squared.png")
+    plt.close()
+
+    # Plot 2: Specific heat
+    plt.figure(figsize=(6,4))
+    for L in L_list:
+        c_all = []
+        for T in T_list:
+            E, M = run_simulation(L, T)
+            N = L * L
+            beta = 1.0 / T
+            c_all.append(beta**2 * (np.mean(E**2) - np.mean(E)**2) / N)
+        plt.plot(T_list, c_all, label=f"L={L}")
+    plt.xlabel("Temperature T")
+    plt.ylabel("Specific heat c")
+    plt.title("Specific heat as a function of temperature")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("./images/specific_heat.png")
+    plt.close()
+
+    # Plot 3: Susceptibility
+    plt.figure(figsize=(6,4))
+    for L in L_list:
+        chi_all = []
+        for T in T_list:
+            E, M = run_simulation(L, T)
+            N = L * L
+            beta = 1.0 / T
+            chi_all.append(beta * (np.mean(M**2) - np.mean(np.abs(M))**2) / N)
+        plt.plot(T_list, chi_all, label=f"L={L}")
+    plt.xlabel("Temperature T")
+    plt.ylabel(r"Susceptibility $\chi$")
+    plt.title("Susceptibility as a function of temperature")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("./images/susceptibility.png")
+    plt.close()
+    
+if __name__ == '__main__':
+    T_list = np.arange(1.5, 3.1, 0.1)
+    L_list = [8, 16, 32]
+    plot_observables(T_list, L_list)
+```
+
+### B 第一问
+``` python
+import numpy as np
+import matplotlib.pyplot as plt
+
+L = 16
+T = 0.5 * np.log(1 + np.sqrt(2)) # 临界温度
+n_steps = 20000
+J = 1
+
+def init_lattice(L):
+    return np.random.choice([-1, 1], size=(L, L))
+
+def calc_energy(lattice):
+    E = 0
+    for i in range(L):
+        for j in range(L):
+            S = lattice[i, j]
+            neighbors = lattice[(i+1)%L, j] + lattice[i, (j+1)%L] + \
+                        lattice[(i-1)%L, j] + lattice[i, (j-1)%L]
+            E -= J * S * neighbors
+    return E / 2  # 避免重复计数
+
+def metropolis_step(lattice, T):
+    for _ in range(L * L):
+        i, j = np.random.randint(0, L, size=2)
+        S = lattice[i, j]
+        neighbors = lattice[(i+1)%L, j] + lattice[i, (j+1)%L] + \
+                    lattice[(i-1)%L, j] + lattice[i, (j-1)%L]
+        dE = 2 * J * S * neighbors
+        if dE <= 0 or np.random.rand() < np.exp(-dE / T):
+            lattice[i, j] *= -1
+    return lattice
+
+energies = []
+lattice = init_lattice(L)
+for t in range(n_steps):
+    lattice = metropolis_step(lattice, T)
+    E = calc_energy(lattice)
+    energies.append(E/L**2)  # 归一化能量
+
+plt.figure(figsize=(6,4))
+plt.plot(energies)
+plt.xlabel("Monte Carlo Time Step $t$")
+plt.ylabel("Average Energy per Spin $\\langle E(t) \\rangle$")
+plt.title("Energy Relaxation ($L=16$, $T=T_c$)")
+plt.grid()
+plt.tight_layout()
+plt.savefig("./images/energy_vs_time_L16.png")
+plt.show()
+```

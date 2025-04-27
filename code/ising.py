@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from utils import initialize_lattice, calculate_energy, calculate_magnetization, metropolis_step
 
 
-def run_simulation(L, T, n_eq=10000, n_meas=100000):
+def run_simulation(L, T, n_eq=600000, n_meas=1600000):
     """
     对 L x L 格子在温度 T 下进行 MCMC 模拟，返回能量和磁化强度统计
     """
