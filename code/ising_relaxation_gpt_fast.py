@@ -3,12 +3,14 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import uniform_filter1d
 from scipy.optimize import curve_fit
 from numba import njit
+import os
+import json
 
 # 参数设置
 L = 16
 T = 1/(0.5 * np.log(1 + np.sqrt(2)) ) # 临界温度
 J = 1
-n_steps = 20000
+n_steps = 2000
 n_runs = 1000
 @njit
 def init_lattice(L):
@@ -201,10 +203,17 @@ def plot_for_diff_L(L_list: list) -> None:
     plt.show()
 
         
-            
-
 if __name__ == "__main__":
-    # energies = run_multiple_simulations(L)
-    # plot(energies)
-    L_list = [8, 16, 32, 64]
-    plot_for_diff_L(L_list)
+    # 1. 运行模拟，得到 energies
+    energies = run_multiple_simulations(L)
+
+    # 2. 导出到 JSON
+    os.makedirs("data", exist_ok=True)
+    json_path = f"data/energies_L{L}.json"
+    with open(json_path, "w") as f:
+        # 将 numpy 数组转换成 list 并写入
+        json.dump(energies.tolist(), f)
+    print(f"Saved energies to {json_path}")
+
+    # 3. 再做拟合用的绘图
+    plot(energies)

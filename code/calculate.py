@@ -30,10 +30,21 @@ def exact_ising(L, T):
     F = -np.log(Z) / beta
     return Z, E_avg, F
 
+
+def return_x(delta):
+    #$$\Delta_E = e^{-0.02557x-0.857}$$
+    return (np.log(delta) + 0.857) / -0.02557
+
+def reture_delta(x):
+    #$$\Delta_E = e^{-0.02557x-0.857}$$
+    return np.exp(-0.02557 * x - 0.857)
+
 if __name__ == "__main__":
-    L = 4
-    T = 1.0
-    Z, E_avg, F = exact_ising(L, T)
-    print(f"Partition function Z = {Z:.5e}")
-    print(f"Average energy <E> = {E_avg:.5f}")
-    print(f"Free energy F = {F:.5f}")
+    # L = 4
+    # T = 1.0
+    # Z, E_avg, F = exact_ising(L, T)
+    # print(f"Partition function Z = {Z:.5e}")
+    # print(f"Average energy <E> = {E_avg:.5f}")
+    # print(f"Free energy F = {F:.5f}")
+    print(reture_delta(200))
+    print(return_x(0.002))
